@@ -1,6 +1,6 @@
 // Romanian Learning App — Service Worker
 // Bump CACHE_VERSION on every release to trigger update notification
-const CACHE_VERSION = 'ro-learn-v2.2';
+const CACHE_VERSION = 'ro-learn-v2.3';
 const ASSETS = ['/', '/index.html'];
 
 // Allow page to trigger activation immediately
@@ -34,9 +34,9 @@ self.addEventListener('fetch', e => {
   const isPage = url.pathname === '/' || url.pathname.endsWith('index.html');
 
   if (isPage) {
-    // Network first — fall back to cache if offline
+    // Network first with no-store to bypass iOS HTTP cache
     e.respondWith(
-      fetch(e.request).then(res => {
+      fetch(e.request, { cache: 'no-store' }).then(res => {
         const clone = res.clone();
         caches.open(CACHE_VERSION).then(c => c.put(e.request, clone));
         return res;
