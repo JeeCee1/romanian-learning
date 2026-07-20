@@ -2534,7 +2534,7 @@ footer {
 
 <script>
 // ── APP VERSION ──────────────────────────────────────────────────────────────
-const APP_VERSION = '5.3';
+const APP_VERSION = '5.4';
 
 // ── WORD DATABASE (100 meest gebruikte woorden) ──────────────────────────────
 // Data model:
@@ -3132,9 +3132,13 @@ const WORDS_EXT = [
 { ro:'turn de control',nl:'verkeerstoren',type:'znw',source:'claude',genus:'n',indef:'un turn de control',def:'turnul de control',plural:'turnuri de control',defpl:'turnurile de control',cat:'transport',level:1, ex_enk:[], ex_mv:[] },
 { ro:'zbor',      nl:'vlucht',        type:'znw', source:'claude', genus:'n', indef:'un zbor',   def:'zborul',   plural:'zboruri', defpl:'zborurile',cat:'transport',level:1,
   ex_enk:[{ro:'Zborul meu e la 7.',nl:'Mijn vlucht is om 7.'}], ex_mv:[] },
-{ ro:'a decola',  nl:'opstijgen',     type:'ww',  source:'claude', cls:'a', sub:'direct', cat:'transport', level:1 },
+{ ro:'a decola',  nl:'opstijgen',     type:'ww',  source:'claude', cls:'a', sub:'ez', cat:'transport', level:1 },
 { ro:'a ateriza', nl:'landen',        type:'ww',  source:'claude', cls:'a', sub:'ez', cat:'transport', level:1 },
-{ ro:'a zbura',   nl:'vliegen',       type:'ww',  source:'claude', cls:'a', sub:'direct', cat:'transport', level:1 },
+{ ro:'a zbura',   nl:'vliegen',       type:'ww',  source:'claude', cat:'transport', level:1,
+  conj:{ pres:['zbor','zbori','zboară','zburăm','zburați','zboară'],
+         perf_part:'zburat', imperf:['zburam','zburai','zbura','zburam','zburați','zburau'],
+         viitor:['o să zbor','o să zbori','o să zboare','o să zburăm','o să zburați','o să zboare'],
+         ex_pres:[], ex_perf:[], ex_imperf:[] } },
 
 // ── WERKWOORDEN UITGEBREID (Extended verbs) ───────────────────────────────────
 { ro:'a cânta',   nl:'zingen',        type:'ww',  source:'claude', cls:'a', sub:'direct', cat:'werkwoord', level:1 },
@@ -3544,7 +3548,7 @@ const WORDS_EXT2 = [
          perf_part:'ales', imperf:['alegeam','alegeai','alegea','alegeam','alegeați','alegeau'],
          viitor:['o să aleg','o să alegi','o să aleagă','o să alegem','o să alegeți','o să aleagă'],
          ex_pres:[{ro:'Alege ce vrei.',nl:'Kies wat je wilt.'}], ex_perf:[], ex_imperf:[] } },
-{ ro:'a amenința', nl:'dreigen / bedreigen', type:'ww', source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
+{ ro:'a amenința', nl:'dreigen / bedreigen', type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
 { ro:'a anunța',   nl:'aankondigen / melden', type:'ww', source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
 { ro:'a aplica',   nl:'aanvragen / toepassen', type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
 { ro:'a aprecia',  nl:'waarderen',         type:'ww', source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
@@ -3578,8 +3582,16 @@ const WORDS_EXT2 = [
 { ro:'a colecta',  nl:'verzamelen / inzamelen', type:'ww', source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
 { ro:'a comunica', nl:'communiceren',      type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
 { ro:'a contacta', nl:'contact opnemen',   type:'ww', source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
-{ ro:'a continua', nl:'doorgaan / verder gaan', type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
-{ ro:'a contribui',nl:'bijdragen',         type:'ww', source:'claude', cls:'i-esc', cat:'veelgebruikt', level:2 },
+{ ro:'a continua', nl:'doorgaan / verder gaan', type:'ww', source:'claude', cat:'veelgebruikt', level:2,
+  conj:{ pres:['continui','continui','continuă','continuăm','continuați','continuă'],
+         perf_part:'continuat', imperf:['continuam','continuai','continua','continuam','continuați','continuau'],
+         viitor:['o să continui','o să continui','o să continue','o să continuăm','o să continuați','o să continue'],
+         ex_pres:[], ex_perf:[], ex_imperf:[] } },
+{ ro:'a contribui',nl:'bijdragen',         type:'ww', source:'claude', cat:'veelgebruikt', level:2,
+  conj:{ pres:['contribui','contribui','contribuie','contribuim','contribuiți','contribuie'],
+         perf_part:'contribuit', imperf:['contribuiam','contribuiai','contribuia','contribuiam','contribuiați','contribuiau'],
+         viitor:['o să contribui','o să contribui','o să contribuie','o să contribuim','o să contribuiți','o să contribuie'],
+         ex_pres:[], ex_perf:[], ex_imperf:[] } },
 { ro:'a convoca',  nl:'bijeenroepen',      type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
 { ro:'a crește',   nl:'groeien / opgroeien', type:'ww', source:'claude', cat:'veelgebruikt', level:2,
   conj:{ pres:['cresc','crești','crește','creștem','creșteți','cresc'],
@@ -3632,7 +3644,11 @@ const WORDS_EXT2 = [
          perf_part:'mâncat', imperf:['mâncam','mâncai','mânca','mâncam','mâncați','mâncau'],
          viitor:['o să mănânc','o să mănânci','o să mănânce','o să mâncăm','o să mâncați','o să mănânce'],
          ex_pres:[{ro:'Mănânc la prânz.',nl:'Ik eet \'s middags.'}], ex_perf:[], ex_imperf:[] } },
-{ ro:'a măsura',   nl:'meten',             type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
+{ ro:'a măsura',   nl:'meten',             type:'ww', source:'claude', cat:'veelgebruikt', level:2,
+  conj:{ pres:['măsor','măsori','măsoară','măsurăm','măsurați','măsoară'],
+         perf_part:'măsurat', imperf:['măsuram','măsurai','măsura','măsuram','măsurați','măsurau'],
+         viitor:['o să măsor','o să măsori','o să măsoare','o să măsurăm','o să măsurați','o să măsoare'],
+         ex_pres:[], ex_perf:[], ex_imperf:[] } },
 { ro:'a merita',   nl:'verdienen / het waard zijn', type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
 { ro:'a modifica', nl:'wijzigen / aanpassen', type:'ww', source:'claude', cls:'a', sub:'direct', cat:'veelgebruikt', level:2 },
 { ro:'a motiva',   nl:'motiveren',         type:'ww', source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
@@ -3847,7 +3863,6 @@ const WORDS_EXT2 = [
 { ro:'egal',       nl:'gelijk',            type:'bnw', source:'claude', cat:'veelgebruikt', level:2, forms:{ms:'egal',fs:'egală',mp:'egali',fp:'egale'}, ex:[] },
 { ro:'european',   nl:'Europees',          type:'bnw', source:'claude', cat:'veelgebruikt', level:2, forms:{ms:'european',fs:'europeană',mp:'europeni',fp:'europene'}, ex:[] },
 { ro:'extern',     nl:'extern / buitenlands',type:'bnw',source:'claude',cat:'veelgebruikt', level:2, forms:{ms:'extern',fs:'externă',mp:'externi',fp:'externe'}, ex:[] },
-{ ro:'față de',    nl:'tegenover',         type:'bw',  source:'claude', cat:'veelgebruikt', level:2 },
 { ro:'fizic',      nl:'fysiek / lichamelijk',type:'bnw',source:'claude',cat:'veelgebruikt', level:2, forms:{ms:'fizic',fs:'fizică',mp:'fizici',fp:'fizice'}, ex:[] },
 { ro:'flexibil',   nl:'flexibel',          type:'bnw', source:'claude', cat:'veelgebruikt', level:2, forms:{ms:'flexibil',fs:'flexibilă',mp:'flexibili',fp:'flexibile'}, ex:[] },
 { ro:'formal',     nl:'formeel',           type:'bnw', source:'claude', cat:'veelgebruikt', level:2, forms:{ms:'formal',fs:'formală',mp:'formali',fp:'formale'}, ex:[] },
@@ -3906,7 +3921,6 @@ const WORDS_EXT2 = [
 { ro:'odată',      nl:'eens / ooit',       type:'bw',  source:'claude', cat:'veelgebruikt', level:2 },
 { ro:'pe lângă',   nl:'naast / bij',       type:'vgw', source:'claude', cat:'veelgebruikt', level:2 },
 { ro:'precum',     nl:'zoals / net als',   type:'vgw', source:'claude', cat:'veelgebruikt', level:2 },
-{ ro:'față de',    nl:'ten opzichte van',  type:'vgw', source:'claude', cat:'veelgebruikt', level:2 },
 { ro:'tocmai',     nl:'juist / net',       type:'bw',  source:'claude', cat:'veelgebruikt', level:2 },
 { ro:'totodată',   nl:'tegelijkertijd',    type:'bw',  source:'claude', cat:'veelgebruikt', level:2 },
 { ro:'totuși',     nl:'toch / desondanks', type:'bw',  source:'claude', cat:'veelgebruikt', level:2 },
