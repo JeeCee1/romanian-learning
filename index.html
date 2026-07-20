@@ -2534,7 +2534,7 @@ footer {
 
 <script>
 // ── APP VERSION ──────────────────────────────────────────────────────────────
-const APP_VERSION = '5.4';
+const APP_VERSION = '5.5';
 
 // ── WORD DATABASE (100 meest gebruikte woorden) ──────────────────────────────
 // Data model:
@@ -3288,7 +3288,11 @@ const WORDS_EXT = [
          ex_pres:[], ex_perf:[], ex_imperf:[] } },
 { ro:'a hotărî',  nl:'beslissen',          type:'ww',  source:'claude', cls:'i-esc', cat:'veelgebruikt', level:2 },
 { ro:'a imagina', nl:'voorstellen (zich)',  type:'ww',  source:'claude', cls:'a', sub:'ez', cat:'veelgebruikt', level:2 },
-{ ro:'a împărți', nl:'verdelen / delen',   type:'ww',  source:'claude', cls:'i-esc', cat:'veelgebruikt', level:2 },
+{ ro:'a împărți', nl:'verdelen / delen',   type:'ww',  source:'claude', cat:'veelgebruikt', level:2,
+  conj:{ pres:['împart','împarți','împarte','împărțim','împărțiți','împart'],
+         perf_part:'împărțit', imperf:['împărțeam','împărțeai','împărțea','împărțeam','împărțeați','împărțeau'],
+         viitor:['o să împart','o să împarți','o să împartă','o să împărțim','o să împărțiți','o să împartă'],
+         ex_pres:[], ex_perf:[], ex_imperf:[] } },
 { ro:'a încearca',nl:'proberen',           type:'ww',  source:'claude', cat:'veelgebruikt', level:2,
   conj:{ pres:['încerc','încerci','încearcă','încercăm','încercați','încearcă'],
          perf_part:'încercat', imperf:['încercam','încercai','încerca','încercam','încercați','încercau'],
@@ -3384,7 +3388,7 @@ const WORDS_EXT = [
          perf_part:'tras', imperf:['trăgeam','trăgeai','trăgea','trăgeam','trăgeați','trăgeau'],
          viitor:['o să trag','o să tragi','o să tragă','o să tragem','o să trageți','o să tragă'],
          ex_pres:[], ex_perf:[], ex_imperf:[] } },
-{ ro:'a trăi',    nl:'leven',             type:'ww', source:'claude', cls:'i', cat:'veelgebruikt', level:2 },
+{ ro:'a trăi',    nl:'leven',             type:'ww', source:'claude', cls:'i-esc', cat:'veelgebruikt', level:2 },
 { ro:'a trece',   nl:'passeren / overgaan', type:'ww', source:'claude', cat:'veelgebruikt', level:2,
   conj:{ pres:['trec','treci','trece','trecem','treceți','trec'],
          perf_part:'trecut', imperf:['treceam','treceai','trecea','treceam','treceați','treceau'],
