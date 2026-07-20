@@ -1,6 +1,6 @@
 // Romanian Learning App — Service Worker
 // Bump CACHE_VERSION on every release to trigger update notification
-const CACHE_VERSION = 'ro-learn-v5.6';
+const CACHE_VERSION = 'ro-learn-v5.11';
 const ASSETS = ['/', '/index.html'];
 
 // Allow page to trigger activation immediately
