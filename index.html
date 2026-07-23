@@ -1050,7 +1050,7 @@ header p {
 #fcWeightBadge   { position: absolute; top: 0.5rem; left: 0.5rem; z-index: 2; font-size: 0.65rem; }
 .dict-star-cell { text-align: center; width: 2rem; padding: 0 !important; }
 .dict-star-btn { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--muted); opacity: 0.4; padding: 0.2rem; line-height: 1; transition: opacity 0.15s, color 0.15s; }
-.dict-star-btn:hover { opacity: 0.8; color: var(--star); }
+.dict-star-btn:hover { }
 .dict-star-btn.marked { opacity: 1; color: var(--star); }
 
 /* ── ADD WORD BUTTON IN DICT ── */
@@ -4964,6 +4964,13 @@ function toggleDictStar(ro, btnEl) {
   if (btnEl) {
     btnEl.classList.toggle('marked', isNow);
     if(window.dbg)dbg('[STAR] class=' + btnEl.className);
+    // Watch for anything else changing this button's class
+    if (!btnEl._obs) {
+      btnEl._obs = new MutationObserver(() => {
+        if(window.dbg)dbg('[WATCH] class changed to: ' + btnEl.className + ' connected=' + btnEl.isConnected);
+      });
+      btnEl._obs.observe(btnEl, { attributes: true, attributeFilter: ['class'] });
+    }
   }
   document.getElementById('fcReviewCount').textContent = fcReviewIds.size;
   const starCountEl = document.getElementById('dictStarCount');
@@ -7120,7 +7127,13 @@ function scheduleGhPush() {
   localDirty = true;
   if (!ghPat()) return;
   clearTimeout(ghPushTimer);
-  ghPushTimer = setTimeout(() => ghPush(true).then(ok => { if (ok) localDirty = false; }), 2000);
+  ghPushTimer = setTimeout(() => {
+    if(window.dbg)dbg('[PUSH] timer fired, starting ghPush, size=' + fcReviewIds.size);
+    ghPush(true).then(ok => {
+      if(window.dbg)dbg('[PUSH] done ok=' + ok + ' size=' + fcReviewIds.size);
+      if (ok) localDirty = false;
+    });
+  }, 2000);
 }
 
 // ── EXPORT / IMPORT (extended) ────────────────────────────────────────────────
