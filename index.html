@@ -4953,17 +4953,17 @@ function toggleDictStarFilter() {
 }
 
 function toggleDictStar(ro, btnEl) {
-  console.log('[STAR] click', ro, 'btnEl:', btnEl, 'connected:', btnEl?.isConnected);
-  console.log('[STAR] before:', fcReviewIds.has(ro), 'size:', fcReviewIds.size);
+  if(window.dbg)dbg('[STAR] tap ' + ro + ' connected=' + btnEl?.isConnected);
+  if(window.dbg)dbg('[STAR] before has=' + fcReviewIds.has(ro) + ' size=' + fcReviewIds.size);
   if (fcReviewIds.has(ro)) fcReviewIds.delete(ro);
   else fcReviewIds.add(ro);
   lsSetJ('ro_fc_review', [...fcReviewIds]);
   scheduleGhPush();
   const isNow = fcReviewIds.has(ro);
-  console.log('[STAR] after:', isNow, 'size:', fcReviewIds.size, 'localDirty:', localDirty);
+  if(window.dbg)dbg('[STAR] after has=' + isNow + ' size=' + fcReviewIds.size + ' dirty=' + localDirty);
   if (btnEl) {
     btnEl.classList.toggle('marked', isNow);
-    console.log('[STAR] classList now:', btnEl.className);
+    if(window.dbg)dbg('[STAR] class=' + btnEl.className);
   }
   document.getElementById('fcReviewCount').textContent = fcReviewIds.size;
   const starCountEl = document.getElementById('dictStarCount');
@@ -5235,7 +5235,7 @@ function toggleConfirmed(ro, btnEl) {
 }
 
 function renderDict() {
-  console.log('[RENDER] renderDict called, fcReviewIds size:', fcReviewIds.size, '\n', new Error().stack.split('\n').slice(1,4).join('\n'));
+  if(window.dbg)dbg('[RENDER] size=' + fcReviewIds.size);
   const tbody = document.getElementById('dictBody');
   let filtered = getAllWords().filter(w => {
     if (dictTypeFilter !== 'all' && w.type !== dictTypeFilter) return false;
@@ -7090,7 +7090,7 @@ async function ghPull(silent=false) {
 
 // Apply imported data (shared by ghPull and importProgress)
 function applyImportData(data) {
-  console.log('[SYNC] applyImportData called, incoming ro_fc_review:', data.ro_fc_review?.length, 'current size:', fcReviewIds.size, 'localDirty:', localDirty);
+  if(window.dbg)dbg('[SYNC] applyImportData in=' + data.ro_fc_review?.length + ' cur=' + fcReviewIds.size + ' dirty=' + localDirty);
   if (data.ro_fc_review)     { fcReviewIds = new Set(data.ro_fc_review); lsSetJ('ro_fc_review', [...fcReviewIds]); }
   if (data.ro_user_words)    { userWords = data.ro_user_words; lsSetJ('ro_user_words', userWords); }
   if (data.ro_confirmed)     { confirmedWords = new Set(data.ro_confirmed); lsSetJ('ro_confirmed', [...confirmedWords]); }
@@ -7306,5 +7306,19 @@ if ('serviceWorker' in navigator) {
       window.location.reload();
     });
   });
+}
+</script>
+
+<!-- ── DEBUG PANEL (v5.30-debug — remove after diagnosis) ─────────────────── -->
+<div id="dbgPanel" style="position:fixed;bottom:0;left:0;right:0;max-height:38vh;overflow-y:auto;background:#111;color:#0f0;font:11px/1.35 monospace;padding:6px 8px;z-index:99999;border-top:2px solid #0f0;white-space:pre-wrap;word-break:break-all"></div>
+<button onclick="document.getElementById('dbgPanel').innerHTML='';" style="position:fixed;bottom:38vh;right:8px;z-index:100000;background:#0f0;color:#000;border:none;border-radius:4px;padding:4px 8px;font:11px monospace;font-weight:bold">CLR</button>
+<button onclick="var p=document.getElementById('dbgPanel');p.style.display=p.style.display==='none'?'':'none';" style="position:fixed;bottom:38vh;right:50px;z-index:100000;background:#0f0;color:#000;border:none;border-radius:4px;padding:4px 8px;font:11px monospace;font-weight:bold">HIDE</button>
+<script>
+function dbg(msg) {
+  var p = document.getElementById('dbgPanel');
+  if (!p) return;
+  var t = new Date().toISOString().substr(14,9);
+  p.innerHTML += t + ' ' + msg + '\n';
+  p.scrollTop = p.scrollHeight;
 }
 </script>
