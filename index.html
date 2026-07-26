@@ -1154,6 +1154,7 @@ footer {
 <div id="gramSearchRow" style="display:none;padding:0.4rem 0.2rem 0.2rem;position:relative">
   <input class="dict-search" id="gramSearch" type="search" placeholder="Zoek in grammatica…" oninput="filterGram()" style="width:100%;padding-right:2rem">
   <button id="gramSearchClear" onclick="clearGramSearch()" style="display:none;position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:1rem;cursor:pointer;line-height:1;padding:0.2rem">×</button>
+  <div id="gramNoResults" style="display:none;font-size:0.82rem;color:var(--muted);padding:0.5rem 0.2rem 0.1rem"></div>
 </div>
 <!-- Sub-pills: Lexicon -->
 <div class="sub-pill-row" id="subLexicon" style="display:none">
@@ -5463,7 +5464,7 @@ function setMode(mode) {
   if (mode==='lexicon') renderDict();
   if (mode==='flash')   renderFlashCard();
   if (mode==='quiz')    initQuiz();
-  syncGramSearchBar();
+  updateGramSearchVisibility();
 }
 
 function setSubMode(panel, sub) {
@@ -5476,8 +5477,7 @@ function setSubMode(panel, sub) {
     // Show grammar sub-pills only when grammatica is active
     const gramRow = document.getElementById('subGrammatica');
     gramRow.style.display = sub==='grammatica' ? '' : 'none';
-    document.getElementById('gramSearchRow').style.display = sub==='grammatica' ? '' : 'none';
-    if (sub !== 'grammatica') clearGramSearch();
+    updateGramSearchVisibility();
     applyTheoryStress();
     if (sub === 'grammatica') {
       const active = document.querySelector('.gram-group.active');
@@ -5497,7 +5497,13 @@ function setSubMode(panel, sub) {
 }
 
 const GRAM_GROUPS = ['zinsbouw','voornaamwoorden','zelfstandig','bijvoeglijk','werkwoorden'];
-function setGramGroup(group) {
+function setGramGroup(group, _internal) {
+  // A user click on a group pill cancels an active search. _internal guards the
+  // restore path inside filterGram() from recursing back into here.
+  if (!_internal) {
+    const _gi = document.getElementById('gramSearch');
+    if (_gi && _gi.value) { _gi.value = ''; filterGram(); }
+  }
   GRAM_GROUPS.forEach(g => {
     const el = document.getElementById('gram'+cap(g));
     if (el) el.classList.toggle('active', g===group);
@@ -5520,85 +5526,155 @@ function toggleProse(btn) {
 }
 
 // ── GRAMMAR SEARCH ───────────────────────────────────────────────────────────
-let _gramPrevGroup = null;
+// Diacritic folding. Every mapping is exactly one char -> one char, so string
+// indices stay aligned between the folded text and the original text. That lets
+// us search "spalat" and still highlight the right span inside "spălat".
+const _RO_FOLD_MAP = { 'ă':'a','â':'a','î':'i','ș':'s','ş':'s','ț':'t','ţ':'t' };
+function gramFold(s) {
+  return s.toLowerCase().replace(/[ăâîșşțţ]/g, ch => _RO_FOLD_MAP[ch] || ch);
+}
 
-// Bug fix 3: ensure gramSearchRow visibility is always in sync with grammatica panel
-function syncGramSearchBar() {
+let _gramPrevGroup   = null;
+let _gramExpanded    = [];            // cards this search auto-expanded
+const _gramTextCache = new WeakMap(); // card -> folded searchable text
+
+// Searchable text of a card. Cached: grammar content is static, and inserting
+// <mark> elements does not change textContent, so the cache stays valid.
+function gramCardText(card) {
+  let t = _gramTextCache.get(card);
+  if (t !== undefined) return t;
+  const clone = card.cloneNode(true);
+  clone.querySelectorAll('textarea, script, style').forEach(n => n.remove());
+  t = gramFold(clone.textContent.replace(/\s+/g, ' '));
+  _gramTextCache.set(card, t);
+  return t;
+}
+
+// Visibility is derived from application state, never from sniffing
+// style.display. setSubMode() is not called on startup, so anything that waited
+// for it stayed hidden until the user left the tab and came back.
+function updateGramSearchVisibility() {
   const row = document.getElementById('gramSearchRow');
   if (!row) return;
-  const panel = document.getElementById('subPanelGrammatica');
-  const visible = panel && panel.style.display !== 'none';
-  row.style.display = visible ? '' : 'none';
-  if (!visible) clearGramSearch();
+  const show = (currentMode === 'theorie' && currentSub === 'grammatica');
+  row.style.display = show ? '' : 'none';
+  const inp = document.getElementById('gramSearch');
+  if (!show && inp && inp.value) clearGramSearch();
+}
+
+function gramClearHighlights(root) {
+  const parents = new Set();
+  root.querySelectorAll('mark.gram-hl').forEach(m => {
+    const p = m.parentNode;
+    if (!p) return;
+    p.replaceChild(document.createTextNode(m.textContent), m);
+    parents.add(p);
+  });
+  parents.forEach(p => p.normalize());   // re-join the split text nodes
+}
+
+// Wrap each occurrence of the query in <mark>, using splitText so every node
+// stays attached to the tree throughout.
+function gramHighlight(root, qFolded) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(n) {
+      const p = n.parentNode;
+      if (!p) return NodeFilter.FILTER_REJECT;
+      const tag = p.nodeName;
+      if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'MARK')
+        return NodeFilter.FILTER_REJECT;
+      return gramFold(n.nodeValue).includes(qFolded)
+        ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+    }
+  });
+  // Collect every target first, then mutate: mutating during the walk
+  // invalidates the walker's position.
+  const targets = [];
+  let n;
+  while ((n = walker.nextNode())) targets.push(n);
+
+  targets.forEach(node => {
+    let cur = node;
+    while (cur) {
+      const idx = gramFold(cur.nodeValue).indexOf(qFolded);
+      if (idx === -1) break;
+      const hit    = cur.splitText(idx);              // cur = prefix, hit = rest
+      const rest   = hit.splitText(qFolded.length);   // hit = exact match
+      const parent = hit.parentNode;
+      if (!parent) break;
+      const mark = document.createElement('mark');
+      mark.className = 'gram-hl';
+      parent.replaceChild(mark, hit);
+      mark.appendChild(hit);
+      cur = rest;                                     // continue after the match
+    }
+  });
+}
+
+function setGramNoResults(show, term) {
+  const el = document.getElementById('gramNoResults');
+  if (!el) return;
+  el.style.display = show ? '' : 'none';
+  el.textContent = show ? 'Geen grammaticakaart bevat \u201c' + term + '\u201d.' : '';
 }
 
 function filterGram() {
-  const q = document.getElementById('gramSearch').value.trim().toLowerCase();
-  const clr = document.getElementById('gramSearchClear');
-  clr.style.display = q ? '' : 'none';
-
+  const inp   = document.getElementById('gramSearch');
   const panel = document.getElementById('subPanelGrammatica');
+  if (!inp || !panel) return;
 
-  // Clear previous highlights — only inside card-body, never card-header
-  panel.querySelectorAll('.card-body mark.gram-hl').forEach(m => {
-    m.replaceWith(document.createTextNode(m.textContent));
-  });
-  panel.normalize();
+  const raw = inp.value.trim();
+  const q   = gramFold(raw);
+  const clr = document.getElementById('gramSearchClear');
+  if (clr) clr.style.display = raw ? '' : 'none';
+
+  gramClearHighlights(panel);
+
+  // Only real grammar cards are filtered. The standalone notepad card sits
+  // outside every .gram-group and is deliberately left untouched.
+  const cards = panel.querySelectorAll('.gram-group .card');
 
   if (!q) {
     panel.classList.remove('gram-search-active');
-    panel.querySelectorAll('.card.gram-hidden').forEach(c => c.classList.remove('gram-hidden'));
-    if (_gramPrevGroup) setGramGroup(_gramPrevGroup);
+    cards.forEach(c => c.classList.remove('gram-hidden'));
+    _gramExpanded.forEach(c => {                       // restore collapsed state
+      const h = c.querySelector('.card-header');
+      const b = c.querySelector('.card-body');
+      if (h) h.classList.add('collapsed');
+      if (b) b.classList.add('collapsed');
+    });
+    _gramExpanded = [];
+    if (_gramPrevGroup) setGramGroup(_gramPrevGroup, true);
     _gramPrevGroup = null;
+    setGramNoResults(false, '');
     return;
   }
 
-  // Remember current group before first search
   if (!panel.classList.contains('gram-search-active')) {
     const activeGrp = document.querySelector('.gram-group.active');
-    _gramPrevGroup = activeGrp ? activeGrp.id.replace('gram','').toLowerCase() : 'zinsbouw';
+    _gramPrevGroup = activeGrp ? activeGrp.id.replace(/^gram/, '').toLowerCase() : 'zinsbouw';
   }
   panel.classList.add('gram-search-active');
 
-  // Show/hide cards and highlight matches
-  panel.querySelectorAll('.card').forEach(card => {
-    // Bug fix 2: search card-body text only (headers are short labels, not searchable content)
-    // but use full card textContent for the match test so headers like "Accusatief" still match
-    const text = card.textContent.toLowerCase();
-    if (!text.includes(q)) {
+  let hits = 0;
+  cards.forEach(card => {
+    if (!gramCardText(card).includes(q)) {
       card.classList.add('gram-hidden');
       return;
     }
+    hits++;
     card.classList.remove('gram-hidden');
-    // Expand card so matches are visible
-    const hdr = card.querySelector('.card-header');
+    const hdr  = card.querySelector('.card-header');
     const body = card.querySelector('.card-body');
     if (hdr && hdr.classList.contains('collapsed')) {
       hdr.classList.remove('collapsed');
       if (body) body.classList.remove('collapsed');
+      if (_gramExpanded.indexOf(card) === -1) _gramExpanded.push(card);
     }
-    // Bug fix 1: only highlight inside card-body, skip card-header to avoid breaking toggleSection
-    if (body) highlightInNode(body, q);
+    if (body) gramHighlight(body, q);
   });
-}
 
-function highlightInNode(node, q) {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const idx = node.textContent.toLowerCase().indexOf(q);
-    if (idx === -1) return;
-    const before = document.createTextNode(node.textContent.slice(0, idx));
-    const mark = document.createElement('mark');
-    mark.className = 'gram-hl';
-    mark.textContent = node.textContent.slice(idx, idx + q.length);
-    const after = document.createTextNode(node.textContent.slice(idx + q.length));
-    node.parentNode.replaceChild(after, node);
-    node.parentNode.insertBefore(mark, after);
-    node.parentNode.insertBefore(before, mark);
-    // Continue searching in the 'after' node for multiple matches
-    highlightInNode(after, q);
-  } else if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'SCRIPT' && node.tagName !== 'STYLE') {
-    Array.from(node.childNodes).forEach(child => highlightInNode(child, q));
-  }
+  setGramNoResults(hits === 0, raw);
 }
 
 function clearGramSearch() {
@@ -8572,6 +8648,10 @@ function clearProgress() {
 
   // Link ro-word spans in grammar to dictionary
   linkRoWords();
+
+  // setSubMode() never runs on startup (the HTML ships with the right pills
+  // pre-marked active), so the search bar has to be switched on explicitly.
+  updateGramSearchVisibility();
 })();
 
 // ── RO-WORD AUTOLINKING ───────────────────────────────────────────────────────
